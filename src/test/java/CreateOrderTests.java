@@ -28,6 +28,7 @@ public class CreateOrderTests {
     @Before
     public void setUp() {
         RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru/"; // Устанавливаем базовый URI
+        orderSteps = new OrderSteps(); // Инициализируем orderSteps
         // Создаем объект Orders с данными, которые не меняются
         order = new Orders(
                 "Naruto",
