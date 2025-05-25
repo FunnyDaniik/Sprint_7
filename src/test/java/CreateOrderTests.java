@@ -1,9 +1,12 @@
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import ru.praktikum.OrderSteps;
 import ru.praktikum.Orders;
 
 import java.util.Arrays;
@@ -19,6 +22,8 @@ public class CreateOrderTests {
     private final String[] color; // Массив цветов для параметризованного теста
     private final int statusCode;
     private Orders order;
+    private Integer trackId; // Переменная для хранения track-номера заказа
+    private OrderSteps orderSteps; // Экземпляр класса для работы с API
 
     @Before
     public void setUp() {
@@ -35,6 +40,27 @@ public class CreateOrderTests {
                 "Saske, come back to Konoha",
                 null // Цвет будет установлен в параметризованном тесте
         );
+    }
+
+    @After
+    public void tearDown() {
+        try {
+            if (trackId != null) {
+                // Отменяем заказ по trackId
+                Response cancelResponse = given()
+                        .log().all()
+                        .contentType(ContentType.JSON)
+                        .put("/api/v1/orders/cancel?track=" + trackId);
+
+                if (cancelResponse.getStatusCode() == 200) {
+                    System.out.println("Заказ успешно отменен, trackId: " + trackId);
+                } else {
+                    System.out.println("Не удалось отменить заказ. Код: " + cancelResponse.getStatusCode());
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Ошибка при отмене заказа: " + e.getMessage());
+        }
     }
 
     // Параметризация теста: передаем разные наборы цветов
@@ -58,12 +84,9 @@ public class CreateOrderTests {
     public void createOrderTest() {
         order.setColor(color); // Устанавливаем цвет в объекте Orders
 
-        // Отправляем POST-запрос на создание заказа и получаем ответ
-        Response response = given()
-                .log().all() // Логируем все детали запроса
-                .header("Content-Type", "application/json") // Устанавливаем заголовок Content-Type
-                .body(order) // Устанавливаем тело запроса (объект Orders будет автоматически преобразован в JSON)
-                .post("/api/v1/orders"); // Отправляем запрос на ручку /api/v1/orders
+        // Создаем заказ через OrderSteps
+        Response response = orderSteps.createOrder(order);
+        response.then().log().all();
 
         // Логируем все детали ответа
         response.then().log().all();
@@ -72,5 +95,7 @@ public class CreateOrderTests {
         assertEquals(statusCode, response.getStatusCode()); // Проверяем, что статус код соответствует ожидаемому (201)
         // Проверяем, что в теле ответа есть поле "track"
         response.then().assertThat().body("track", notNullValue()); // Проверяем, что поле "track" не равно null
+        // Сохраняем trackId созданного заказа для последующей отмены
+        trackId = response.jsonPath().getInt("track");
     }
 }

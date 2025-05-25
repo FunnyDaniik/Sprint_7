@@ -3,7 +3,9 @@ import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
 import io.restassured.config.LogConfig;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import ru.praktikum.Courier;
@@ -13,11 +15,14 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 public class CreateCourierTest {
-    private String login;
-    private String password;
-    private String firstName;
-    private CourierSteps courierCreate;
+    // Поля для хранения данных тестового курьера
+    private String login;  // Логин курьера
+    private String password; // Пароль курьера
+    private String firstName; // Имя курьера
+    private CourierSteps courierCreate; // Объект для работы с API курьеров
+    private int courierId; // Идентификатор курьера
 
+    // Выполняется перед каждым тестом
     @Before
     public void setUp() {
         RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru/"; // Устанавливаем базовый URI для RestAssured
@@ -25,6 +30,33 @@ public class CreateCourierTest {
         password = RandomStringUtils.randomAlphanumeric(8, 20); // Генерируем случайный пароль
         firstName = RandomStringUtils.randomAlphanumeric(4, 28); // Генерируем случайное имя
         courierCreate = new CourierSteps(); // Создаем экземпляр класса CourierSteps для выполнения запросов
+    }
+
+    @After
+    public void tearDown() {
+        try {
+            if (login != null && password != null) {
+                // 1. Логинимся, чтобы получить ID курьера
+                Response loginResponse = courierCreate.sendPostRequestCourierLogin(
+                        new Courier(login, password, firstName));
+
+                if (loginResponse.statusCode() == 200) {
+                    courierId = loginResponse.jsonPath().getInt("id");
+
+                    // 2. Удаляем курьера по полученному ID
+                    Response deleteResponse = courierCreate.sendRequestDeleteCourier(courierId);
+
+                    if (deleteResponse.statusCode() == 200) {
+                        System.out.println("Курьер успешно удален, ID: " + courierId);
+                    } else {
+                        System.out.println("Не удалось удалить курьера. Код: " +
+                                deleteResponse.statusCode());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Ошибка при удалении курьера: " + e.getMessage());
+        }
     }
 
     @Test

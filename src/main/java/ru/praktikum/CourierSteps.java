@@ -44,4 +44,5 @@ public class CourierSteps { // Класс, содержащий шаги для 
                         .when() // Переходим к действию
                         .delete("/api/v1/courier/{id}"); // Отправляем DELETE-запрос на ручку /api/v1/courier/{id}
     }
+
 }
