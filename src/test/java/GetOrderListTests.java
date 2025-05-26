@@ -2,14 +2,17 @@ import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.junit.Before;
 import org.junit.Test;
+import ru.praktikum.OrderSteps;
+
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.notNullValue;
 
 public class GetOrderListTests {
-
+    private OrderSteps orderSteps;
     @Before
     public void setUp() {
         RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru/"; // Устанавливаем базовый URI
+        orderSteps = new OrderSteps();
     }
 
     @Test
@@ -17,7 +20,6 @@ public class GetOrderListTests {
         // Отправляем GET-запрос на получение списка заказов с несуществующим courierId
 
         Response response = given()
-                .log().ifValidationFails() // Логируем запрос и ответ, если валидация не прошла
                 .header("Content-type", "application/json") // Устанавливаем заголовок Content-Type
                 .get("/api/v1/orders"); // Выполняем GET запрос к эндпоинту /api/v1/orders
 
